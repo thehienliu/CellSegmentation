@@ -2,6 +2,7 @@ import os
 import cv2
 import torch
 import argparse
+from loguru import logger
 import albumentations as A
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
@@ -21,6 +22,7 @@ def parse_args():
 if __name__ == "__main__":
 
   # Get config
+  logger.info("Setup config file!")
   args = parse_args()
   config = OmegaConf.load(args.config)
 
@@ -33,6 +35,7 @@ if __name__ == "__main__":
           tissue_types[tissue_type] = len(tissue_types)
 
   # Setup transform
+  logger.info("Setup data transformations!")
   trans = config.transformations
   input_shape = 256
 
@@ -70,8 +73,13 @@ if __name__ == "__main__":
   valid_transform = A.Compose([A.Normalize(mean=trans.normalize.mean, std=trans.normalize.std)])
   test_transform = A.Compose([A.Normalize(mean=trans.normalize.mean, std=trans.normalize.std)])
 
+  logger.info(f"Train transform: \n{train_transform}")
+  logger.info(f"Val transform: \n{valid_transform}")
+  logger.info(f"Test transform: \n{test_transform}")
+
 
   # Setup dataset
+  logger.info("Setup custom dataset!")
   train_data = CustomCellSeg(image_dir=config.data.train.image_dir,
                             label_dir=config.data.train.label_dir,
                             class_names=tissue_types,
@@ -88,11 +96,14 @@ if __name__ == "__main__":
                             transforms=test_transform)
 
   # Setup training
+  logger.info("Setup training!")
   device = 'cuda' if torch.cuda.is_available() else 'cpu'
   model = CellMamba(num_classes=len(tissue_types)).to(device)
   loss_fn_dict = get_loss_fn()
   optimizer = torch.optim.AdamW(model.parameters(), betas=(0.85, 0.95), weight_decay=0.0001)
   scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.85)
+
+  logger.info(f"Model: \n{model}")
 
   # Setup data loader
   train_dataloader = DataLoader(train_data, batch_size=config.training.batch_size, shuffle=True)
@@ -110,6 +121,7 @@ if __name__ == "__main__":
                            early_stopping=None)
 
   # Fit
+  logger.info("Trainer fit!")
   trainer.fit(epochs=config.training.epochs,
             train_dataloader=train_dataloader,
             val_dataloader=valid_dataloader,
