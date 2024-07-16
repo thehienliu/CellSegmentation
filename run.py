@@ -126,4 +126,4 @@ if __name__ == "__main__":
             train_dataloader=train_dataloader,
             val_dataloader=valid_dataloader,
             metric_init=None,
-            eval_every=5)
+            eval_every=config.training.eval_every)

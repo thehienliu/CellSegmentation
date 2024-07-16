@@ -10,8 +10,8 @@ from torchmetrics.functional.classification import binary_jaccard_index
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 import torch
+from loguru import logger
 from tqdm.auto import tqdm
-
 
 class EarlyStopping:
     """Early Stopping Class
@@ -178,11 +178,13 @@ class CellMambaTrainer:
             "Tissue-Multiclass-Accuracy/Train": tissue_detection_accuracy,
         }
 
-        print(f"Training epoch: {epoch}")
-        print(f"Loss: {scalar_metrics['Loss/Train']:.4f}")
-        print(f"Binary-Cell-Dice: {scalar_metrics['Binary-Cell-Dice-Mean/Train']:.4f}")
-        print(f"Binary-Cell-Jacard: {scalar_metrics['Binary-Cell-Jacard-Mean/Train']:.4f}")
-        print(f"Tissue-MC-Acc.: {scalar_metrics['Tissue-Multiclass-Accuracy/Train']:.4f}")
+        logger.info(
+          f"Training epoch stats:\t"
+          f"Loss: {scalar_metrics['Loss/Train']:.4f} - "
+          f"Binary-Cell-Dice: {scalar_metrics['Binary-Cell-Dice-Mean/Train']:.4f} - "
+          f"Binary-Cell-Jacard: {scalar_metrics['Binary-Cell-Jacard-Mean/Train']:.4f} - "
+          f"Tissue-MC-Acc.: {scalar_metrics['Tissue-Multiclass-Accuracy/Train']:.4f}"
+        )
 
         return scalar_metrics
 
@@ -258,17 +260,19 @@ class CellMambaTrainer:
             ),
         }
         cr = classification_report(y_true=np.concatenate(tissue_gt), y_pred=np.concatenate(tissue_pred), labels=self.tissue_types, target_names=self.tissue_names)
-        print(f"Validation epoch: {epoch}")
-        print(f"Loss: {scalar_metrics['Loss/Validation']:.4f}")
-        print(f"Binary-Cell-Dice: {scalar_metrics['Binary-Cell-Dice-Mean/Validation']:.4f}")
-        print(f"Binary-Cell-Jacard: {scalar_metrics['Binary-Cell-Jacard-Mean/Validation']:.4f}")
-        print(f"bPQ-Score: {scalar_metrics['bPQ/Validation']:.4f}")
-        print(f"mPQ-Score: {scalar_metrics['mPQ/Validation']:.4f}")
-        print(f"Tissue-MC-Acc.: {tissue_detection_accuracy:.4f}")
-        print(f"Tissue-MC-Recall.: {tissue_detection_recall:.4f}")
-        print(f"Tissue-MC-Precision: {tissue_detection_precision:.4f}")
-        print(f"Tissue-MC-F1.: {tissue_detection_f1:.4f}")
-        print(cr)
+        logger.info(
+          f"Validation epoch stats:\t"
+          f"Loss: {scalar_metrics['Loss/Validation']:.4f} - "
+          f"Binary-Cell-Dice: {scalar_metrics['Binary-Cell-Dice-Mean/Validation']:.4f} - "
+          f"Binary-Cell-Jacard: {scalar_metrics['Binary-Cell-Jacard-Mean/Validation']:.4f} - "
+          f"bPQ-Score: {scalar_metrics['bPQ/Validation']:.4f} - "
+          f"mPQ-Score: {scalar_metrics['mPQ/Validation']:.4f} - "
+          f"Tissue-MC-Acc.: {tissue_detection_accuracy:.4f} - "
+          f"Tissue-MC-Recall.: {tissue_detection_recall:.4f} - "
+          f"Tissue-MC-Precision: {tissue_detection_precision:.4f} - "
+          f"Tissue-MC-F1.: {tissue_detection_f1:.4f}"
+        )
+        logger.info(cr)
         return scalar_metrics, scalar_metrics['bPQ/Validation']
 
   
@@ -292,6 +296,8 @@ class CellMambaTrainer:
 
       for epoch in range(self.start_epoch, epochs):
 
+        logger.info(f"Start epoch: {epoch + 1}")
+
 
         ##### Train and validation model #####
         train_scalar_metrics = self.train_epoch(epoch, train_dataloader)
@@ -304,10 +310,10 @@ class CellMambaTrainer:
           if self.early_stopping is not None:
             best_model = self.early_stopping(early_stopping_metric, epoch)
             if best_model:
-              print("New best model - save checkpoint")
+              logger.info("New best model - save checkpoint")
               self.save_checkpoint(epoch, "model_best.pth")
             elif self.early_stopping.early_stop:
-              print("Performing early stopping!")
+              logger.info("Performing early stopping!")
               break
         self.save_checkpoint(epoch, "latest_checkpoint.pth")
 
@@ -319,10 +325,11 @@ class CellMambaTrainer:
         else:
             self.scheduler.step()
         new_lr = self.optimizer.param_groups[0]["lr"]
-        print('Old lr: {} - New lr: {}'.format(curr_lr, new_lr))
+        logger.info('Old lr: {} - New lr: {}'.format(curr_lr, new_lr))
 
   
   def save_checkpoint(self, epoch: int, checkpoint_name: str):
+      
         if self.early_stopping is None:
             best_metric = None
             best_epoch = None
