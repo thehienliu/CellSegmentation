@@ -5,10 +5,10 @@ import argparse
 import albumentations as A
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
-from cell_segmentation.models.cellmamba import CellMamba
-from cell_segmentation.utils.get_loss import get_loss_fn
-from cell_segmentation.datasets.pannuke import CustomCellSeg
-from cell_segmentation.trainer.trainer_cellmamba import CellMambaTrainer
+from models.cellmamba import CellMamba
+from utils.get_loss import get_loss_fn
+from datasets.pannuke import CustomCellSeg
+from trainer.trainer_cellmamba import CellMambaTrainer
 
 
 def parse_args():

@@ -1,4 +1,4 @@
-from cell_segmentation.utils.base_loss import retrieve_loss_fn
+from utils.base_loss import retrieve_loss_fn
 from torch import nn
 def get_loss_fn() -> dict:
         """Create a dictionary with loss functions for all branches

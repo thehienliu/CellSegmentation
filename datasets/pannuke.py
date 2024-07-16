@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 from scipy.ndimage import center_of_mass
-from cell_segmentation.utils.tools import get_bounding_box
+from utils.tools import get_bounding_box
 
 class CustomCellSeg(Dataset):
     # AKA ChatGPT suggest the __init__ function

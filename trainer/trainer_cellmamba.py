@@ -4,8 +4,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchmetrics.functional import dice
 from sklearn.metrics import accuracy_score, classification_report, f1_score, precision_score, recall_score
-from cell_segmentation.models.cellmamba import CellMamba
-from cell_segmentation.utils.metrics import get_fast_pq, remap_label
+from models.cellmamba import CellMamba
+from utils.metrics import get_fast_pq, remap_label
 from torchmetrics.functional.classification import binary_jaccard_index
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler

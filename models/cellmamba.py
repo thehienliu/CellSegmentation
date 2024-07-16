@@ -4,7 +4,7 @@ import numpy as np
 from mamba_ssm import Mamba
 from typing import List
 from collections import OrderedDict
-from cell_segmentation.utils.post_proc_cellmamba import DetectionCellPostProcessor
+from utils.post_proc_cellmamba import DetectionCellPostProcessor
 
 class Permute(nn.Module):
     def __init__(self, *args):
