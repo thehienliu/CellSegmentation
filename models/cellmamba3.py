@@ -1,267 +1,20 @@
 import torch
-from torch import nn
 import numpy as np
-from mamba_ssm import Mamba
+from torch import nn
 from typing import List
-from timm.models.layers import DropPath
-from collections import OrderedDict
+from mamba_ssm import Mamba
 from einops import rearrange
-from cell_segmentation.utils.post_proc_cellmamba import DetectionCellPostProcessor
-from CellViT.models.encoders.VIT.SAM.image_encoder import ImageEncoderViT
-from typing import Optional, Tuple, Type, List
 from functools import partial
-
-class Permute(nn.Module):
-    def __init__(self, *args):
-        super().__init__()
-        self.args = args
-
-    def forward(self, x: torch.Tensor):
-        return x.permute(*self.args)
-
-class PatchEmbed(nn.Module):
-    r""" Image to Patch Embedding
-
-    Args:
-        img_size (int): Image size.  Default: 256.
-        patch_size (int): Patch token size. Default: 4.
-        in_chans (int): Number of input image channels. Default: 3.
-        embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
-    """
-
-    def __init__(self, patch_size=4, in_chans=3, embed_dim=96, norm_layer=nn.LayerNorm):
-        super().__init__()
-
-        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
-        self.norm = norm_layer(embed_dim)
-
-    def forward(self, x):
-        x = self.proj(x).flatten(2).transpose(1, 2)  # B H*W C
-        return self.norm(x)
-
-class PatchMerging(nn.Module):
-    def __init__(self, dim, norm_layer=nn.LayerNorm):
-      """ Patch Merging Layer.
-
-      Args:
-          input_resolution (tuple[int]): Resolution of input feature.
-          dim (int): Number of input channels.
-          norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
-      """
-
-      super().__init__()
-      self.dim = dim
-      self.reduction = nn.Linear(4 * dim, 2 * dim, bias=False)
-      self.norm = norm_layer(4 * dim)
-
-    def forward(self, x):
-        """
-        x: B, H, W, C
-        """
-        B, H, W, C = x.shape
-
-        x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
-        x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
-        x2 = x[:, 0::2, 1::2, :]  # B H/2 W/2 C
-        x3 = x[:, 1::2, 1::2, :]  # B H/2 W/2 C
-        x = torch.cat([x0, x1, x2, x3], -1)  # B H/2 W/2 4*C
-        x = x.view(B, -1, 4 * C)  # B H/2*W/2 4*C
-
-        x = self.norm(x)
-        x = self.reduction(x)
-
-        return x
-
-class PatchExpand(nn.Module):
-    def __init__(self, dim, dim_scale=2, norm_layer=nn.LayerNorm):
-        super().__init__()
-        self.dim = dim
-        self.dim_scale = dim_scale
-        self.expand = nn.Linear(dim, dim_scale*dim, bias=False)
-        self.norm = norm_layer(dim // dim_scale)
-
-    def forward(self, x):
-        """
-        x: B, H, W, C
-        """
-        x = self.expand(x)
-        B, H, W, C = x.shape
-        x = rearrange(x, 'b h w (p1 p2 c)-> b (h p1) (w p2) c', p1=self.dim_scale, p2=self.dim_scale, c=C//(self.dim_scale ** 2))
-        x= self.norm(x)
-
-        return x
+from collections import OrderedDict
+from timm.models.layers import DropPath
+from models.modules.mamba import BasicLayer_up
+from typing import Optional, Tuple, Type, List, Dict
+from models.modules.cnn import Conv2DBlock, Deconv2DBlock
+from utils.post_proc_cellmamba import DetectionCellPostProcessor
+from CellViT.models.encoders.VIT.SAM.image_encoder import ImageEncoderViT
 
 
-class Conv2DBlock(nn.Module):
-    """Conv2DBlock with convolution followed by batch-normalisation, ReLU activation and dropout
-
-    Args:
-        in_channels (int): Number of input channels for convolution
-        out_channels (int): Number of output channels for convolution
-        kernel_size (int, optional): Kernel size for convolution. Defaults to 3.
-        dropout (float, optional): Dropout. Defaults to 0.
-    """
-
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        kernel_size: int = 3,
-        dropout: float = 0,
-    ) -> None:
-        super().__init__()
-        self.block = nn.Sequential(
-            nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=kernel_size,
-                stride=1,
-                padding=((kernel_size - 1) // 2),
-            ),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(True),
-            nn.Dropout(dropout),
-        )
-
-    def forward(self, x):
-        return self.block(x)
-
-class Deconv2DBlock(nn.Module):
-    """Deconvolution block with ConvTranspose2d followed by Conv2d, batch-normalisation, ReLU activation and dropout
-
-    Args:
-        in_channels (int): Number of input channels for deconv block
-        out_channels (int): Number of output channels for deconv and convolution.
-        kernel_size (int, optional): Kernel size for convolution. Defaults to 3.
-        dropout (float, optional): Dropout. Defaults to 0.
-    """
-
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        kernel_size: int = 3,
-        dropout: float = 0,
-    ) -> None:
-        super().__init__()
-        self.block = nn.Sequential(
-            nn.ConvTranspose2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=2,
-                stride=2,
-                padding=0,
-                output_padding=0,
-            ),
-            nn.Conv2d(
-                in_channels=out_channels,
-                out_channels=out_channels,
-                kernel_size=kernel_size,
-                stride=1,
-                padding=((kernel_size - 1) // 2),
-            ),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(True),
-            nn.Dropout(dropout),
-        )
-
-    def forward(self, x):
-        return self.block(x)
-
-class Mamba2dBlock(nn.Module):
-  def __init__(self, d_model, d_state, d_conv, expand, drop_path=0.1):
-    super().__init__()
-
-    self.mamba = Mamba(d_model=d_model,
-                       d_state=d_state,
-                       d_conv=d_conv,
-                       expand=expand)
-
-    self.out_norm = nn.LayerNorm(d_model)
-    self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-    self.out_proj = nn.Linear(d_model, d_model)
-
-  def forward(self, x):
-    # x shape b l d
-    
-    (b, l, d) = x.shape
-    hw = int(l**0.5)
-
-    x1 = x.view(b, hw, hw, d) # b h w d
-    x2 = x1.flip(dims=[1]).transpose(1, 2) # b w h d
-
-    # Flatten
-    x1 = x1.view(b, -1, d) # b hw d
-    x2 = x2.contiguous().view(b, -1, d) # b wh d
-
-    y1 = self.mamba(x1)
-    y2 = self.mamba(x2)
-    y3 = self.mamba(x1.flip(dims=[1]))
-    y4 = self.mamba(x2.flip(dims=[1]))
-
-    # Transpose back
-    y1 = y1.view(b, hw, hw, d) # b h w d
-    y2 = y2.view(b, hw, hw, d).transpose(1, 2).flip(dims=[1]) # b w h d -> b h w d
-    y3 = y3.flip(dims=[1]).view(b, hw, hw, d) # b h w d
-    y4 = y4.flip(dims=[1]).view(b, hw, hw, d).transpose(1, 2).flip(dims=[1]) # b h w d
-
-    y = y1 + y2 + y3 + y4 # b h w d -> Consider using a Linear to aggregate the the Mamba output
-    out = self.out_norm(y).view(b, -1, d)
-
-    return x + self.drop_path(self.out_proj(out)) # Skip connection i test below is here
-
-class Mamba2dLayer(nn.Module):
-  def __init__(self, d_model, d_state, d_conv, expand, depth, dropout=0.1):
-    super().__init__()
-
-    self.blocks = nn.ModuleList()
-    self.norms = nn.ModuleList()
-    self.dropout = nn.Dropout(dropout)
-
-    for i in range(depth):
-      self.blocks.append(Mamba2dBlock(d_model, d_state, d_conv, expand))
-      self.norms.append(nn.LayerNorm(d_model) if i < depth - 1 else nn.Identity())
-
-  def forward(self, x):
-
-    for blk, norm in zip(self.blocks, self.norms):
-      x = self.dropout(norm(blk(x)))
-
-    (b, l, d) = x.shape
-    hw = int(l ** 0.5)
-
-    return x.view(b, hw, hw, d)
-
-
-class BasicLayer_up(nn.Module):
-    def __init__(self, d_model, d_state, d_conv, expand, depth, dropout=0.1, dim_scale=2):
-
-        super().__init__()
-
-        # build blocks
-        self.blocks = nn.ModuleList()
-        self.norms = nn.ModuleList()
-        self.dropout = nn.Dropout(dropout)
-
-        for i in range(depth):
-          self.blocks.append(Mamba2dBlock(d_model, d_state, d_conv, expand))
-          self.norms.append(nn.LayerNorm(d_model))
-
-        # patch merging layer
-        self.upsample = PatchExpand(dim=d_model, dim_scale=dim_scale)
-
-    def forward(self, x):
-
-        for blk, norm in zip(self.blocks, self.norms):
-            x = self.dropout(norm(blk(x)))
-
-        (b, l, d) = x.shape
-        hw = int(l ** 0.5)
-
-        x = self.upsample(x.view(b, hw, hw, d))
-        return x
-
+# model path https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth
 class ViTCellViTDeit(ImageEncoderViT):
     def __init__(
         self,
@@ -394,16 +147,16 @@ class CellMamba(nn.Module):
 
         # Build downsampler
         self.encoder = ViTCellViTDeit(extract_layers=[3, 6, 9, 12],
-                                            depth=12,
-                                            embed_dim=768,
-                                            mlp_ratio=4,
-                                            norm_layer=partial(torch.nn.LayerNorm, eps=1e-6),
-                                            num_heads=12,
-                                            qkv_bias=True,
-                                            use_rel_pos=True,
-                                            global_attn_indexes=[2, 5, 8, 11],
-                                            window_size=14,
-                                            out_chans=256,)
+                                      depth=12,
+                                      embed_dim=768,
+                                      mlp_ratio=4,
+                                      norm_layer=partial(torch.nn.LayerNorm, eps=1e-6),
+                                      num_heads=12,
+                                      qkv_bias=True,
+                                      use_rel_pos=True,
+                                      global_attn_indexes=[2, 5, 8, 11],
+                                      window_size=14,
+                                      out_chans=256,)
         
         self.classifier = nn.Linear(classifier_dim, num_classes)
 
@@ -412,17 +165,31 @@ class CellMamba(nn.Module):
         self.hv_map_decoder = self.create_upsampling_branch(num_classes=2, depth=depth)
         self.nuclei_type_maps_decoder = self.create_upsampling_branch(num_classes=self.num_nuclei_classes, depth=depth)
 
-    def load_pretrained_encoder(self, model_path):
-        """Load pretrained SAM encoder from provided path
+    def _strip_state_dict(self, state_dict: Dict) -> OrderedDict:
+        """Strip the 'image_encoder' from the SAM state dict keys."""
+        new_dict = {}
+        for k, w in state_dict.items():
+            if "image_encoder" in k:
+                spl = ["".join(kk) for kk in k.split(".")]
+                new_key = ".".join(spl[1:])
+                new_dict[new_key] = w
 
-        Args:
-            model_path (str): Path to SAM model
-        """
-        state_dict = torch.load(str(model_path), map_location="cpu")
-        image_encoder = self.encoder
-        msg = image_encoder.load_state_dict(state_dict, strict=False)
-        print(f"Loading checkpoint: {msg}")
-        self.encoder = image_encoder
+        return new_dict
+
+    def load_pretrained_encoder(self, ckpt_path) -> None:
+        """Load the weights from the checkpoint."""
+        state_dict = torch.load(
+            ckpt_path, map_location=lambda storage, loc: storage
+        )
+        try:
+            msg = self.encoder.load_state_dict(state_dict, strict=True)
+        except RuntimeError:
+            new_ckpt = self._strip_state_dict(state_dict)
+            msg = self.encoder.load_state_dict(new_ckpt, strict=True)
+        except BaseException as e:
+            raise RuntimeError(f"Error loading checkpoint: {e}")
+
+        print(f"Loading pre-trained {type(self.encoder).__name__} checkpoint: {msg}")
 
     def forward(self, x):
         ''' Forward pass
