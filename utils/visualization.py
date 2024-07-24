@@ -23,5 +23,3 @@ def plot_pred(outputs, masks, map):
         for i in range(0, len(ax)//2):
             ax[i].imshow(outputs['nuclei_binary_map'].argmax(dim=1)[i].cpu().numpy(), cmap='gray')
             ax[i+bs].imshow(masks['nuclei_binary_map'][i].numpy(), cmap='gray')
-    
-    

@@ -1,4 +1,4 @@
-experiment: 'cellmamba'
+experiment: 'cellmambav2'
 
 data:
   train:

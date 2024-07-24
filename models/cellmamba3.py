@@ -74,7 +74,7 @@ class ViTCellViTDeit(ImageEncoderViT):
         return torch.mean(_output, axis=-1), output, extracted_layers
 
 
-class CellMamba(nn.Module):
+class CellMambaV3(nn.Module):
     def __init__(self,
                  num_classes: int,
                  drop_rate: float = 0.2,
