@@ -112,13 +112,13 @@ if __name__ == "__main__":
 
     # Setup trainer
     trainer = CellMambaTrainer(model=model,
-                            loss_fn_dict=loss_fn_dict,
-                            optimizer=optimizer,
-                            scheduler=scheduler,
-                            device=device,
-                            num_classes=6, # This is nuclei class sr please fix the name for me
-                            logdir=args.output, # a
-                            early_stopping=None)
+                               loss_fn_dict=loss_fn_dict,
+                               optimizer=optimizer,
+                               scheduler=scheduler,
+                               device=device,
+                               num_classes=6, # This is nuclei class sr please fix the name for me
+                               logdir=args.output, # a
+                               early_stopping=None)
 
     # Fit
     logger.info("Trainer fit!")

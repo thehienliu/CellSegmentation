@@ -114,7 +114,7 @@ class CellMambaTrainer:
       self.start_epoch = 0
       self.early_stopping = early_stopping
       self.logdir = Path(logdir)
-      self.model = model
+      self.model = model.to(device)
       self.optimizer = optimizer
       self.scheduler = scheduler
       self.device = device
