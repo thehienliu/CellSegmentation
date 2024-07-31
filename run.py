@@ -2,6 +2,7 @@ import os
 import cv2
 import torch
 import argparse
+import numpy as np
 from loguru import logger
 import albumentations as A
 from omegaconf import OmegaConf
@@ -28,12 +29,7 @@ if __name__ == "__main__":
     config = OmegaConf.load(args.config)
 
     # Setup Class
-    tissue_types = {}
-
-    for filename in os.listdir('/content/fold1/images'):
-        tissue_type = filename.split('type_')[-1].split('.')[0]
-        if tissue_type not in tissue_types:
-            tissue_types[tissue_type] = len(tissue_types)
+    tissue_types = np.load("tissue_types.npy", allow_pickle=True)
 
     # Setup transform
     logger.info("Setup data transformations!")
