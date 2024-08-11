@@ -631,5 +631,5 @@ def run_patch_inference(
         }
 
         # saving        
-        with open(run_dir + "inference_results.json", "w") as outfile:
+        with open(run_dir + "/inference_results.json", "w") as outfile:
             json.dump(all_metrics, outfile, indent=2)
