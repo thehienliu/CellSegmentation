@@ -1,5 +1,42 @@
+# -*- coding: utf-8 -*-
+# Implemented Metrics for Cell detection
+#
+# This code is based on the following repository: https://github.com/TissueImageAnalytics/PanNuke-metrics
+#
+# Implemented metrics are:
+#
+# Instance Segmentation Metrics
+# Binary PQ
+# Multiclass PQ
+# Neoplastic PQ
+# Non-Neoplastic PQ
+# Inflammatory PQ
+# Dead PQ
+# Inflammatory PQ
+# Dead PQ
+#
+# Detection and Classification Metrics
+# Precision, Recall, F1
+#
+# Other
+# dice1, dice2, aji, aji_plus
+#
+# Binary PQ (bPQ): Assumes all nuclei belong to same class and reports the average PQ across tissue types.
+# Multi-Class PQ (mPQ): Reports the average PQ across the classes and tissue types.
+# Neoplastic PQ: Reports the PQ for the neoplastic class on all tissues.
+# Non-Neoplastic PQ: Reports the PQ for the non-neoplastic class on all tissues.
+# Inflammatory PQ: Reports the PQ for the inflammatory class on all tissues.
+# Connective PQ: Reports the PQ for the connective class on all tissues.
+# Dead PQ: Reports the PQ for the dead class on all tissues.
+#
+# @ Fabian Hörst, fabian.hoerst@uk-essen.de
+# Institute for Artifical Intelligence in Medicine,
+# University Medicine Essen
+
+from typing import List
 import numpy as np
 from scipy.optimize import linear_sum_assignment
+
 
 def get_fast_pq(true, pred, match_iou=0.5):
     """
@@ -110,6 +147,9 @@ def get_fast_pq(true, pred, match_iou=0.5):
     return [dq, sq, dq * sq], [paired_true, paired_pred, unpaired_true, unpaired_pred]
 
 
+#####
+
+
 def remap_label(pred, by_size=False):
     """
     Rename all instance id so that the id is contiguous i.e [0, 1, 2, 3]
@@ -141,3 +181,90 @@ def remap_label(pred, by_size=False):
     for idx, inst_id in enumerate(pred_id):
         new_pred[pred == inst_id] = idx + 1
     return new_pred
+
+
+####
+
+
+def binarize(x):
+    """
+    convert multichannel (multiclass) instance segmetation tensor
+    to binary instance segmentation (bg and nuclei),
+
+    :param x: B*B*C (for PanNuke 256*256*5 )
+    :return: Instance segmentation
+    """
+    out = np.zeros([x.shape[0], x.shape[1]])
+    count = 1
+    for i in range(x.shape[2]):
+        x_ch = x[:, :, i]
+        unique_vals = np.unique(x_ch)
+        unique_vals = unique_vals.tolist()
+        unique_vals.remove(0)
+        for j in unique_vals:
+            x_tmp = x_ch == j
+            x_tmp_c = 1 - x_tmp
+            out *= x_tmp_c
+            out += count * x_tmp
+            count += 1
+    out = out.astype("int32")
+    return out
+
+
+def get_tissue_idx(tissue_indices, idx):
+    for i in range(len(tissue_indices)):
+        if tissue_indices[i].count(idx) == 1:
+            tiss_idx = i
+    return tiss_idx
+
+
+def cell_detection_scores(
+    paired_true, paired_pred, unpaired_true, unpaired_pred, w: List = [1, 1]
+):
+    tp_d = paired_pred.shape[0]
+    fp_d = unpaired_pred.shape[0]
+    fn_d = unpaired_true.shape[0]
+
+    # tp_tn_dt = (paired_pred == paired_true).sum()
+    # fp_fn_dt = (paired_pred != paired_true).sum()
+    prec_d = tp_d / (tp_d + fp_d)
+    rec_d = tp_d / (tp_d + fn_d)
+
+    f1_d = 2 * tp_d / (2 * tp_d + w[0] * fp_d + w[1] * fn_d)
+
+    return f1_d, prec_d, rec_d
+
+
+def cell_type_detection_scores(
+    paired_true,
+    paired_pred,
+    unpaired_true,
+    unpaired_pred,
+    type_id,
+    w: List = [2, 2, 1, 1],
+    exhaustive: bool = True,
+):
+    type_samples = (paired_true == type_id) | (paired_pred == type_id)
+
+    paired_true = paired_true[type_samples]
+    paired_pred = paired_pred[type_samples]
+
+    tp_dt = ((paired_true == type_id) & (paired_pred == type_id)).sum()
+    tn_dt = ((paired_true != type_id) & (paired_pred != type_id)).sum()
+    fp_dt = ((paired_true != type_id) & (paired_pred == type_id)).sum()
+    fn_dt = ((paired_true == type_id) & (paired_pred != type_id)).sum()
+
+    if not exhaustive:
+        ignore = (paired_true == -1).sum()
+        fp_dt -= ignore
+
+    fp_d = (unpaired_pred == type_id).sum()  #
+    fn_d = (unpaired_true == type_id).sum()
+
+    prec_type = (tp_dt + tn_dt) / (tp_dt + tn_dt + w[0] * fp_dt + w[2] * fp_d)
+    rec_type = (tp_dt + tn_dt) / (tp_dt + tn_dt + w[1] * fn_dt + w[3] * fn_d)
+
+    f1_type = (2 * (tp_dt + tn_dt)) / (
+        2 * (tp_dt + tn_dt) + w[0] * fp_dt + w[1] * fn_dt + w[2] * fp_d + w[3] * fn_d
+    )
+    return f1_type, prec_type, rec_type
