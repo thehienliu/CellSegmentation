@@ -12,6 +12,7 @@ from utils.get_loss import get_loss_fn
 from utils.load_model import load_model
 from datasets.pannuke import CustomCellSeg
 from trainer.trainer_cellmamba import CellMambaTrainer
+from utils.inference import run_patch_inference
 
 
 def parse_args():
@@ -123,3 +124,41 @@ if __name__ == "__main__":
                 val_dataloader=valid_dataloader,
                 metric_init=None,
                 eval_every=config.training.eval_every)
+
+    # Infer
+    dataset_config = {
+        "nuclei_types": {
+                        "Background": 0,
+                        "Neoplastic cells": 1,
+                        "Inflammatory": 2,
+                        "Connective/Soft tissue cells": 3,
+                        "Dead Cells": 4,
+                        "Epithelial": 5},
+        "tissue_types": {
+                        'Bile-duct': 0,
+                        'Thyroid': 1,
+                        'Testis': 2,
+                        'HeadNeck': 3,
+                        'Adrenal_gland': 4,
+                        'Prostate': 5,
+                        'Breast': 6,
+                        'Pancreatic': 7,
+                        'Colon': 8,
+                        'Lung': 9,
+                        'Cervix': 10,
+                        'Liver': 11,
+                        'Uterus': 12,
+                        'Skin': 13,
+                        'Esophagus': 14,
+                        'Kidney': 15,
+                        'Stomach': 16,
+                        'Ovarian': 17,
+                        'Bladder': 18}
+    }
+    run_patch_inference(model=model,
+                        run_dir=".",
+                        inference_dataloader=test_dataloader,
+                        device="cuda",
+                        logger=logger,
+                        dataset_config=dataset_config,
+                        generate_plots=False)
