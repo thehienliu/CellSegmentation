@@ -1,5 +1,6 @@
 import os
 import cv2
+import sys
 import torch
 import argparse
 import numpy as np
@@ -23,6 +24,12 @@ def parse_args():
 
 
 if __name__ == "__main__":
+
+    # Config logger
+    log_level = "DEBUG"
+    log_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS zz}</green> | <level>{level: <8}</level> | <yellow>Line {line: >4} ({file}):</yellow> <b>{message}</b>"
+    logger.add(sys.stderr, level=log_level, format=log_format, colorize=True, backtrace=True, diagnose=True)
+    logger.add("info.log", level=log_level, format=log_format, colorize=False, backtrace=True, diagnose=True)
 
     # Get config
     logger.info("Setup config file!")
