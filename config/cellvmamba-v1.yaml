@@ -1,17 +1,17 @@
 experiment: 'cellvmamba'
 
-weight_path:  'VMambaWeights.pth'
+weight_path:  'vssm1_tiny_0230s_ckpt_epoch_264.pth'
 
 data:
   train:
-    image_dir: '/content/fold1/images'
-    label_dir: '/content/fold1/labels'
+    image_dir: '/fold1/images'
+    label_dir: '/fold1/labels'
   val:
-    image_dir: '/content/fold2/images'
-    label_dir: '/content/fold2/labels'
+    image_dir: '/fold2/images'
+    label_dir: '/fold2/labels'
   test:
-    image_dir: '/content/fold3/images'
-    label_dir: '/content/fold3/labels'
+    image_dir: '/fold3/images'
+    label_dir: '/fold3/labels'
 
 
 training:
@@ -31,7 +31,7 @@ transformations:
     scale: 0.5
   blur:
     p: 0.2
-    blur_limit: 10
+    blur_limit: 9
   gaussnoise:
     p: 0.25
     var_limit: 50
