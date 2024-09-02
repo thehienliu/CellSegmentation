@@ -253,6 +253,11 @@ class CellMambaTrainer:
             patience = 0
 
         for epoch in range(self.start_epoch, epochs):
+            
+            ##### Unfreeze encoder when epoch comes to 25
+            if epoch == 25: 
+                self.model.unfreeze_encoder()
+                logger.info("Encoder unfreezed! Epoch {}.".format(epoch))
 
             logger.info(f"Start epoch: {epoch + 1}")
 
