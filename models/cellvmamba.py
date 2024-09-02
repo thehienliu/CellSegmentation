@@ -34,7 +34,7 @@ class CellVMamba(nn.Module):
 
       self.dims = dims
       self.drop_rate = drop_rate
-
+      self.num_nuclei_classes = num_nuclei_classes
       self.encoder = VSSM(patch_size=patch_size,
                           in_chans=in_chans,
                           num_classes=num_classes,

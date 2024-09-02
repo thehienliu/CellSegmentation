@@ -258,7 +258,7 @@ class CellMambaTrainer:
             if epoch == 25: 
                 self.model.unfreeze_encoder()
                 logger.info("Encoder unfreezed! Epoch {}.".format(epoch))
-
+            
             logger.info(f"Start epoch: {epoch + 1}")
 
             ##### Train and validation model #####

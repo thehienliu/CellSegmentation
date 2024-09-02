@@ -35,9 +35,10 @@ if __name__ == "__main__":
     logger.info("Setup config file!")
     args = parse_args()
     config = OmegaConf.load(args.config)
+    logger.info(args)
 
     # Setup Class
-    tissue_types = np.load("tissue_types.npy", allow_pickle=True)
+    tissue_types = np.load("tissue_types.npy", allow_pickle=True).item()
 
     # Setup transform
     logger.info("Setup data transformations!")
@@ -71,7 +72,7 @@ if __name__ == "__main__":
                             width=input_shape,
                             p=trans.randomsizedcrop.p,
                         ),
-            A.ElasticTransform(p=trans.elastictransform.p, sigma=25, alpha=0.5, alpha_affine=15),
+            A.ElasticTransform(p=trans.elastictransform.p, sigma=25, alpha=0.5, alpha_affine=None),
             A.Normalize(mean=trans.normalize.mean, std=trans.normalize.std)
       ])
 
@@ -122,8 +123,9 @@ if __name__ == "__main__":
                                scheduler=scheduler,
                                device=device,
                                num_classes=6, # This is nuclei class sr please fix the name for me
+                               patience=1,
                                logdir=args.output, # a
-                               early_stopping=None)
+                               )
 
     # Fit
     logger.info("Trainer fit!")

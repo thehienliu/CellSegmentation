@@ -1,6 +1,6 @@
 experiment: 'cellvmamba'
 
-weigth_path:  'VMambaWeights.pth'
+weight_path:  'VMambaWeights.pth'
 
 data:
   train:
