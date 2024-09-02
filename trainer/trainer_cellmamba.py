@@ -148,12 +148,6 @@ class CellMambaTrainer:
         """
         self.model.eval()
 
-        binary_dice_scores = []
-        binary_jaccard_scores = []
-        pq_scores = []
-        cell_type_pq_scores = []
-        tissue_pred = []
-        tissue_gt = []
         total_loss = 0
 
         with torch.no_grad():
@@ -169,55 +163,14 @@ class CellMambaTrainer:
 
                 # Calculate loss per batch
                 total_loss += loss.item()
-                batch_metrics = self.calculate_step_metric_validation(predictions, gt)
-                binary_dice_scores = binary_dice_scores + batch_metrics["binary_dice_scores"]
-                binary_jaccard_scores = binary_jaccard_scores + batch_metrics["binary_jaccard_scores"]
-                pq_scores = pq_scores + batch_metrics["pq_scores"]
-                cell_type_pq_scores = cell_type_pq_scores + batch_metrics["cell_type_pq_scores"]
-                tissue_pred.append(batch_metrics["tissue_pred"])
-                tissue_gt.append(batch_metrics["tissue_gt"])
-
-        # calculate global metrics
-        binary_dice_scores = np.array(binary_dice_scores)
-        binary_jaccard_scores = np.array(binary_jaccard_scores)
-        pq_scores = np.array(pq_scores)
-        tissue_detection_accuracy = accuracy_score(
-            y_true=np.concatenate(tissue_gt), y_pred=np.concatenate(tissue_pred)
-        )
-        tissue_detection_precision = precision_score(
-            y_true=np.concatenate(tissue_gt), y_pred=np.concatenate(tissue_pred), average='micro'
-        )
-        tissue_detection_recall = recall_score(
-            y_true=np.concatenate(tissue_gt), y_pred=np.concatenate(tissue_pred), average='micro'
-        )
-        tissue_detection_f1 = f1_score(
-            y_true=np.concatenate(tissue_gt), y_pred=np.concatenate(tissue_pred), average='micro'
-        )
 
         scalar_metrics = {
             "Loss/Validation": total_loss / len(val_dataloader),
-            "Binary-Cell-Dice-Mean/Validation": np.nanmean(binary_dice_scores),
-            "Binary-Cell-Jacard-Mean/Validation": np.nanmean(binary_jaccard_scores),
-            "Tissue-Multiclass-Accuracy/Validation": tissue_detection_accuracy,
-            "bPQ/Validation": np.nanmean(pq_scores),
-            "mPQ/Validation": np.nanmean(
-                [np.nanmean(pq) for pq in cell_type_pq_scores]
-            ),
         }
-        cr = classification_report(y_true=np.concatenate(tissue_gt), y_pred=np.concatenate(tissue_pred), labels=self.tissue_types, target_names=self.tissue_names)
         logger.info(
             f"Validation epoch stats:\t"
             f"Loss: {scalar_metrics['Loss/Validation']:.4f} - "
-            f"Binary-Cell-Dice: {scalar_metrics['Binary-Cell-Dice-Mean/Validation']:.4f} - "
-            f"Binary-Cell-Jacard: {scalar_metrics['Binary-Cell-Jacard-Mean/Validation']:.4f} - "
-            f"bPQ-Score: {scalar_metrics['bPQ/Validation']:.4f} - "
-            f"mPQ-Score: {scalar_metrics['mPQ/Validation']:.4f} - "
-            f"Tissue-MC-Acc.: {tissue_detection_accuracy:.4f} - "
-            f"Tissue-MC-Recall.: {tissue_detection_recall:.4f} - "
-            f"Tissue-MC-Precision: {tissue_detection_precision:.4f} - "
-            f"Tissue-MC-F1.: {tissue_detection_f1:.4f}"
         )
-        logger.info(cr)
         return scalar_metrics, scalar_metrics['Loss/Validation']
 
     def fit(self,
@@ -258,7 +211,7 @@ class CellMambaTrainer:
             if epoch == 25: 
                 self.model.unfreeze_encoder()
                 logger.info("Encoder unfreezed! Epoch {}.".format(epoch))
-            
+
             logger.info(f"Start epoch: {epoch + 1}")
 
             ##### Train and validation model #####
