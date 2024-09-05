@@ -126,7 +126,7 @@ class CellMambaTrainer:
             }
 
             logger.info(
-                f"Training epoch stats:\t"
+                f"🚉🚉🚉 Training epoch stats:\t"
                 f"Loss: {scalar_metrics['Loss/Train']:.4f} - "
                 f"Binary-Cell-Dice: {scalar_metrics['Binary-Cell-Dice-Mean/Train']:.4f} - "
                 f"Binary-Cell-Jacard: {scalar_metrics['Binary-Cell-Jacard-Mean/Train']:.4f} - "
@@ -169,7 +169,7 @@ class CellMambaTrainer:
         }
         logger.info(
             f"Validation epoch stats:\t"
-            f"Loss: {scalar_metrics['Loss/Validation']:.4f} - "
+            f"Loss: {scalar_metrics['Loss/Validation']:.4f}"
         )
         return scalar_metrics, scalar_metrics['Loss/Validation']
 

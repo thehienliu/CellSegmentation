@@ -584,6 +584,7 @@ def run_patch_inference(
                 ]
             )
         logger.info(
+            '\n' +
             tabulate(
                 flattened_tissue, headers=["Tissue", "Dice", "Jaccard", "mPQ", "bPQ"]
             )
@@ -601,7 +602,7 @@ def run_patch_inference(
                 ]
             )
         logger.info(
-            tabulate(flattened_nuclei_type, headers=["Nuclei Type", "DQ", "SQ", "PQ"])
+            '\n' + tabulate(flattened_nuclei_type, headers=["Nuclei Type", "DQ", "SQ", "PQ"])
         )
         # nuclei detection metrics
         logger.info(f"{20*'*'} Nuclei Detection Metrics {20*'*'}")
@@ -616,6 +617,7 @@ def run_patch_inference(
                 ]
             )
         logger.info(
+            '\n' + 
             tabulate(
                 flattened_detection,
                 headers=["Nuclei Type", "Precision", "Recall", "F1"],
