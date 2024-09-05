@@ -106,8 +106,8 @@ if __name__ == "__main__":
     model = load_model(config, num_classes=len(tissue_types)).to(device)
     model.freeze_encoder()
     loss_fn_dict = get_loss_fn()
-    optimizer = torch.optim.AdamW(model.parameters(), betas=(0.85, 0.95), weight_decay=0.0001)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.85)
+    optimizer = torch.optim.AdamW(model.parameters(), betas=(0.85, 0.95), weight_decay=0.0001, lr = 0.0003)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
     logger.info(f"Model: \n{model}")
 
