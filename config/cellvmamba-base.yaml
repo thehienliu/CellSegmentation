@@ -2,7 +2,7 @@ experiment: 'cellvmamba'
 
 patience: 5
 
-weight_path:  'vssm1_tiny_0230s_ckpt_epoch_264.pth'
+weight_path:  'vssm_base_0229_ckpt_epoch_237.pth'
 
 data:
   train:
