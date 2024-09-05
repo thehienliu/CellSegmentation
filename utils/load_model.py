@@ -19,7 +19,7 @@ def load_model(config, num_classes):
                         pretrained_weight=config.weight_path)
 
     elif config.experiment == 'cellvmambabase':
-        model = CellMamba(num_classes=num_classes,
+        model = CellVMamba(num_classes=num_classes,
                   num_nuclei_classes=6,
                   dims=[128, 256, 512, 1024],
                   depths=[2, 2, 15, 2],
