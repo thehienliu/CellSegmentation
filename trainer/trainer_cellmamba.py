@@ -51,7 +51,7 @@ class CellMambaTrainer:
         num_classes: int,
         logdir: str,
         patience: int,
-        checkpoint_path: str='/content/logs/checkpoints'
+        checkpoint_path: str = None
     ):
         self.loss_fn_dict = loss_fn_dict
         self.num_classes = num_classes
@@ -67,7 +67,7 @@ class CellMambaTrainer:
         'Bile-duct', 'HeadNeck', 'Prostate', 'Pancreatic',
         'Lung', 'Kidney', 'Esophagus', 'Skin', 'Ovarian', 'Liver', 'Bladder']
         self.patience = patience
-        self.checkpoint_path = '/content/logs/checkpoints'
+        self.checkpoint_path = checkpoint_path 
 
     def train_epoch(self, epoch: int, train_dataloader: DataLoader):
             """Training logic for a training epoch
@@ -225,19 +225,19 @@ class CellMambaTrainer:
                     patience = 0
                     best_metrics = val_scalar_metrics
                     best_epoch = epoch + continue_epoch
+                    self.save_checkpoint(epoch + continue_epoch,
+                                    best_metrics,
+                                    best_epoch,
+                                    patience,
+                                    "latest_checkpoint.pth")
                 else:
                     patience += 1
                 exit_train = False
 
                 if patience == self.patience:
-                    logger.info('patience reached.')
+                    logger.info('Early stopping!')
                     exit_train = True
-
-                self.save_checkpoint(epoch + continue_epoch,
-                                    best_metrics,
-                                    best_epoch,
-                                    patience,
-                                    "latest_checkpoint.pth")
+                
                 if exit_train == True:
                     break
 
@@ -274,12 +274,15 @@ class CellMambaTrainer:
             "best_epoch": best_epoch,
             "patience": patience
         }
-
+        
         checkpoint_dir = self.logdir / "checkpoints"
         checkpoint_dir.mkdir(exist_ok=True, parents=True)
 
         filename = str(checkpoint_dir / checkpoint_name)
         torch.save(state, filename)
+        
+        logger.info("Best model saved in {}".format(filename))
+
 
     def calculate_loss(self, predictions, gt):
         """Calculate the loss
