@@ -123,7 +123,7 @@ if __name__ == "__main__":
                                scheduler=scheduler,
                                device=device,
                                num_classes=6, # This is nuclei class sr please fix the name for me
-                               patience=1,
+                               patience=config.patience,
                                logdir=args.output, # a
                                )
 

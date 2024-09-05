@@ -1,5 +1,7 @@
 experiment: 'cellvmamba'
 
+patience: 5
+
 weight_path:  'vssm1_tiny_0230s_ckpt_epoch_264.pth'
 
 data:

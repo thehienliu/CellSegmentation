@@ -87,7 +87,7 @@ class CellMambaTrainer:
             tissue_gt = []
 
             for images, masks, tissue_type in tqdm(train_dataloader):
-
+           
             # Send data to device
                 images = images.to(self.device)
 
