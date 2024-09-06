@@ -191,19 +191,10 @@ class CellMambaTrainer:
             eval_every (int, optional): How often the network should be evaluated (after how many epochs). Defaults to 1.
         """
 
-        if os.path.isfile(os.path.join(self.checkpoint_path, "latest_checkpoint.pth")):
-            checkpoint = self.load_checkpoint(os.path.join(self.checkpoint_path, "latest_checkpoint.pth"))
-            # use_rl = checkpoint["use_rl"]
-            lowest_loss = checkpoint["metrics"]['Loss/Validation']
-            continue_epoch = checkpoint["epoch"] + 1
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            patience = checkpoint["patience"]
-
-        else:
-            continue_epoch = 0
-            lowest_loss = 9999
-            patience = 0
+        
+        continue_epoch = 0
+        lowest_loss = 99999
+        patience = 0
 
         for epoch in range(self.start_epoch, epochs):
             
