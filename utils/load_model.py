@@ -18,6 +18,11 @@ def load_model(config, num_classes):
                         num_nuclei_classes=6,
                         pretrained_weight=config.weight_path)
 
+    elif config.experiment == 'cellvmamabatiny':
+        model = CellVMamba(num_classes=num_classes,
+                  num_nuclei_classes=6,
+                  pretrained_weight=config.weight_path)
+
     elif config.experiment == 'cellvmambabase':
         model = CellVMamba(num_classes=num_classes,
                   num_nuclei_classes=6,
