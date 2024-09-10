@@ -4,8 +4,8 @@ from typing import List
 from einops import rearrange
 from collections import OrderedDict
 
-from vmamba.vmamba import LayerNorm2d, SS2D, VSSM
 from utils.post_proc_cellmamba import DetectionCellPostProcessor
+from models.vmamba.vmamba import LayerNorm2d, SS2D, VSSM
 from models.modules.cnn import Conv2DBlock
 from models.modules.utils import PatchExpand
 
