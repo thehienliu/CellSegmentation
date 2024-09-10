@@ -3,6 +3,7 @@ from torch import nn
 from typing import List
 from einops import rearrange
 from collections import OrderedDict
+import numpy as np
 
 from utils.post_proc_cellmamba import DetectionCellPostProcessor
 from models.vmamba.vmamba import LayerNorm2d, SS2D, VSSM

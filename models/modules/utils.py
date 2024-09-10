@@ -65,20 +65,22 @@ class PatchMerging(nn.Module):
         return x
 
 class PatchExpand(nn.Module):
-    def __init__(self, dim, dim_scale=2, norm_layer=nn.LayerNorm):
+    def __init__(self, dim, dim_scale=2, expand_dim=2, norm_layer=nn.LayerNorm):
         super().__init__()
         self.dim = dim
         self.dim_scale = dim_scale
-        self.expand = nn.Linear(dim, dim_scale*dim, bias=False)
-        self.norm = norm_layer(dim // dim_scale)
+        self.expand = nn.Linear(dim, expand_dim*dim, bias=False)
+        self.norm = norm_layer(expand_dim*dim // (self.dim_scale ** 2))
 
     def forward(self, x):
         """
-        x: B, H, W, C
+        x: B, C, H, W
         """
+        x = x.permute(0, 2, 3, 1)
         x = self.expand(x)
         B, H, W, C = x.shape
         x = rearrange(x, 'b h w (p1 p2 c)-> b (h p1) (w p2) c', p1=self.dim_scale, p2=self.dim_scale, c=C//(self.dim_scale ** 2))
-        x= self.norm(x)
+        x = self.norm(x)
+        x = x.permute(0, 3, 1, 2)
 
         return x
