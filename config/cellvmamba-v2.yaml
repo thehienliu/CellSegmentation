@@ -1,0 +1,60 @@
+experiment: 'cellvmambav2'
+
+patience: 5
+
+weight_path:  'vssm1_tiny_0230s_ckpt_epoch_264.pth'
+
+data:
+  train:
+    image_dir: '/fold1/images'
+    label_dir: '/fold1/labels'
+  val:
+    image_dir: '/fold2/images'
+    label_dir: '/fold2/labels'
+  test:
+    image_dir: '/fold3/images'
+    label_dir: '/fold3/labels'
+
+
+training:
+  batch_size: 16
+  epochs: 100
+  eval_every: 1
+
+transformations:
+  randomrotate90:
+    p: 0.5
+  horizontalflip:
+    p: 0.5
+  verticalflip:
+    p: 0.5
+  downscale:
+    p: 0.15
+    scale: 0.5
+  blur:
+    p: 0.2
+    blur_limit: 9
+  gaussnoise:
+    p: 0.25
+    var_limit: 50
+  colorjitter:
+    p: 0.2
+    scale_setting: 0.25
+    scale_color: 0.1
+  superpixels:
+    p: 0.1
+  zoomblur:
+    p: 0.1
+  randomsizedcrop:
+    p: 0.1
+  elastictransform:
+    p: 0.2
+  normalize:
+    mean:
+    - 0.5
+    - 0.5
+    - 0.5
+    std:
+    - 0.5
+    - 0.5
+    - 0.5
