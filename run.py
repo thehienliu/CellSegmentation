@@ -110,7 +110,7 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
     logger.info(f"Model: \n{model}")
-
+    
     # Setup data loader
     train_dataloader = DataLoader(train_data, batch_size=config.training.batch_size, shuffle=True)
     valid_dataloader = DataLoader(valid_data, batch_size=config.training.batch_size, shuffle=False)
@@ -134,6 +134,12 @@ if __name__ == "__main__":
                 val_dataloader=valid_dataloader,
                 metric_init=None,
                 eval_every=config.training.eval_every)
+    
+    try:
+        logger.info("Best checkpoint loaded!")
+        model.load_state_dict(torch.load("latest_checkpoint.pth", weights_only=True))
+    except:
+        logger.info("Load checkpoint failed!")
 
     # Infer
     dataset_config = {

@@ -252,25 +252,18 @@ class CellMambaTrainer:
         state = {
             "arch": arch,
             "epoch": epoch,
-
-            'torch_rng_state': torch.get_rng_state(),
-            'cuda_rng_state': torch.cuda.get_rng_state(),
-            'numpy_rng_state': np.random.get_state(),
-            'random_rng_state': random.getstate(),
-
             "model_state_dict": self.model.state_dict(),
-            "optimizer_state_dict": self.optimizer.state_dict(),
-            "scheduler_state_dict": self.scheduler.state_dict(),
             "metrics": best_metrics,
             "best_epoch": best_epoch,
             "patience": patience
         }
         
-        checkpoint_dir = self.logdir / "checkpoints"
-        checkpoint_dir.mkdir(exist_ok=True, parents=True)
+        #checkpoint_dir = self.logdir / "checkpoints"
+        #checkpoint_dir.mkdir(exist_ok=True, parents=True)
 
-        filename = str(checkpoint_dir / checkpoint_name)
-        torch.save(state, filename)
+        filename = str(checkpoint_name)
+        
+        torch.save(state, "./" + filename)
         
         logger.info("Best model saved in {}".format(filename))
 
