@@ -72,7 +72,7 @@ if __name__ == "__main__":
                             width=input_shape,
                             p=trans.randomsizedcrop.p,
                         ),
-            A.ElasticTransform(p=trans.elastictransform.p, sigma=25, alpha=0.5, alpha_affine=None),
+            A.ElasticTransform(p=trans.elastictransform.p, sigma=25, alpha=0.5, alpha_affine=15),
             A.Normalize(mean=trans.normalize.mean, std=trans.normalize.std)
       ])
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     try:
         logger.info("Best checkpoint loaded!")
         model.load_state_dict(torch.load("latest_checkpoint.pth", weights_only=True))
-    except:
+    except: 
         logger.info("Load checkpoint failed!")
 
     # Infer
