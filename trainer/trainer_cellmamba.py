@@ -263,7 +263,7 @@ class CellMambaTrainer:
 
         filename = str(checkpoint_name)
         
-        torch.save(state, "./" + filename)
+        torch.save(state, filename)
         
         logger.info("Best model saved in {}".format(filename))
 
