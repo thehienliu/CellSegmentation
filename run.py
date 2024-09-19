@@ -136,7 +136,7 @@ if __name__ == "__main__":
                 eval_every=config.training.eval_every)
     
     try:
-        model.load_state_dict(torch.load("lastest_checkpoint.pth", weights_only=True)["model_state_dict"])
+        model.load_state_dict(torch.load("latest_checkpoint.pth", weights_only=True)["model_state_dict"])
         logger.info("Best checkpoint loaded!")
     except:
         logger.info("Load checkpoint failed!")
